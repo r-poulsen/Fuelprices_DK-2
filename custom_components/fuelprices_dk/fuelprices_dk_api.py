@@ -20,12 +20,12 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PRICE_TYPE = "pump"
-# DIESEL = "diesel"
-# DIESEL_PLUS = "diesel+"
+DIESEL = "diesel"
+DIESEL_PLUS = "diesel+"
 # ELECTRIC = "electric"
 OCTANE_95 = "oktan 95"
-# OCTANE_95_PLUS = "oktan 95+"
-# OCTANE_100 = "oktan 100"
+OCTANE_95_PLUS = "oktan 95+"
+OCTANE_100 = "oktan 100"
 
 
 class FuelPrices:
@@ -231,10 +231,10 @@ class FuelCompanyOk(FuelCompany):
         OCTANE_95: {
             "name": "Blyfri 95"
         },
-        "oktan 100": {
+        OCTANE_100: {
             "name": "Oktan 100"
         },
-        "diesel": {
+        DIESEL: {
             "name": "Diesel"
         }
     }
@@ -272,9 +272,9 @@ class FuelCompanyShell(FuelCompany):
 
     _products = {
         OCTANE_95: {"name": "Shell FuelSave 95 oktan"},
-        "oktan 100": {"name": "Shell V-Power 100 oktan"},
-        "diesel": {"name": "Shell FuelSave Diesel"},
-        "diesel+": {"name": "Shell V-Power Diesel"}
+        OCTANE_100: {"name": "Shell V-Power 100 oktan"},
+        DIESEL: {"name": "Shell FuelSave Diesel"},
+        DIESEL_PLUS: {"name": "Shell V-Power Diesel"}
     }
 
     def refresh_prices(self):
@@ -302,9 +302,9 @@ class FuelCompanyCirclek(FuelCompany):
 
     _products = {
         OCTANE_95: {"name": "miles95"},
-        "oktan 95+": {"name": "miles+95"},
-        "diesel":  {"name": "miles Diesel"},
-        "diesel+": {"name": "miles+ Diesel"},
+        OCTANE_95_PLUS: {"name": "miles+95"},
+        DIESEL:  {"name": "miles Diesel"},
+        DIESEL_PLUS: {"name": "miles+ Diesel"},
         "electric": {"name": "El Lynlader"}
     }
 
@@ -319,9 +319,9 @@ class FuelCompanyF24(FuelCompany):
 
     _products = {
         OCTANE_95: {"name": "GoEasy 95 E10", "ProductCode": 22253},
-        "oktan 95+": {"name": "GoEasy 95 Extra E5", "ProductCode": 22603},
-        "diesel":  {"name": "GoEasy Diesel", "ProductCode": 24453},
-        "diesel+": {"name": "GoEasy Diesel Extra", "ProductCode": 24338},
+        OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22603},
+        DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24453},
+        DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24338},
     }
 
     def refresh_prices(self):
@@ -369,9 +369,9 @@ class FuelCompanyQ8(FuelCompanyF24):
 
     _products = {
         OCTANE_95: {"name": "GoEasy 95 E10", "ProductCode": 22251},
-        "oktan 95+": {"name": "GoEasy 95 Extra E5", "ProductCode": 22601},
-        "diesel":  {"name": "GoEasy Diesel", "ProductCode": 24451},
-        "diesel+": {"name": "GoEasy Diesel Extra", "ProductCode": 24337},
+        OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22601},
+        DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24451},
+        DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24337},
     }
 
 
@@ -382,8 +382,8 @@ class FuelCompanyIngo(FuelCompany):
 
     _products = {
         OCTANE_95: {"name": "Benzin 95"},
-        "oktan 95+": {"name": "UPGRADE 95"},
-        "diesel":  {"name": "Diesel"},
+        OCTANE_95_PLUS: {"name": "UPGRADE 95"},
+        DIESEL:  {"name": "Diesel"},
     }
 
     def refresh_prices(self):
@@ -397,8 +397,8 @@ class FuelCompanyOil(FuelCompany):
 
     _products = {
         OCTANE_95: {"name": "95 E10"},
-        "oktan 95+": {"name": "PREMIUM 98"},
-        "diesel":  {"name": "Diesel"},
+        OCTANE_95_PLUS: {"name": "PREMIUM 98"},
+        DIESEL:  {"name": "Diesel"},
     }
 
     def refresh_prices(self):
