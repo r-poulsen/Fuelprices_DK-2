@@ -22,16 +22,4 @@ for company_key, company in f.companies.items():
         print(f"{product_key=} {product['name']=}")
 
 
-# print('-' * 80)
 
-# print(f"{f._companies}")
-
-# for c in f.companies:
-#     print(f"{c.name=}")
-# for product_key in f.get_company_products_keys(company_key):
-#     print(f"{product_key=}")
-# try:
-#     print(f"price: {f.get_company(
-#         company_key).get_product_price(product_key)}")
-# except KeyError:
-#     print("No price!")
