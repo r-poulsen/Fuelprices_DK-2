@@ -93,7 +93,7 @@ class FuelPriceSensor(SensorEntity):
 
     @property
     def state(self) -> float:
-        return float(self._fuel_company.products[self._product_key]["price"])
+        return round(float(self._fuel_company.products[self._product_key]["price"]), 2)
 
     @property
     def extra_state_attributes(self):

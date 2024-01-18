@@ -3,7 +3,29 @@
 import logging
 from fuelprices_dk import FuelPrices
 
-logging.basicConfig(level=logging.DEBUG)
+
+DIESEL = "diesel"
+DIESEL_PLUS = "diesel+"
+CHARGE = "charge"
+QUICKCHARGE = "quickcharge"
+OCTANE_95 = "oktan 95"
+OCTANE_95_PLUS = "oktan 95+"
+OCTANE_100 = "oktan 100"
+
+
+test_companies = {
+    'circlek': [OCTANE_95, OCTANE_95_PLUS, DIESEL, DIESEL_PLUS, QUICKCHARGE],
+    'f24': [OCTANE_95, OCTANE_95_PLUS, DIESEL, DIESEL_PLUS, CHARGE],
+    'goon': [OCTANE_95, DIESEL],
+    'ingo': [OCTANE_95, OCTANE_95_PLUS, DIESEL],
+    'oil': [OCTANE_95, OCTANE_95_PLUS, DIESEL],
+    'ok': [OCTANE_95, OCTANE_100, DIESEL],
+    'q8': [OCTANE_95, OCTANE_95_PLUS, DIESEL, DIESEL_PLUS, CHARGE, QUICKCHARGE],
+    'shell': [OCTANE_95, OCTANE_100, DIESEL, DIESEL_PLUS, QUICKCHARGE],
+    'unox': [OCTANE_95, OCTANE_95_PLUS, OCTANE_100, DIESEL],
+}
+
+# logging.basicConfig(level=logging.DEBUG)
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 _LOGGER = logging.getLogger(__name__)
 
@@ -11,15 +33,18 @@ f = FuelPrices()
 f.load_companies(None, None)
 f.refresh()
 
-for company_key, company in f.companies.items():
-    print(f"{company_key=} {company.name}")
-    # print(f"{c.name=}")
-    # print(f"{c.key=}")
+for company, products in test_companies.items():
+    for product in products:
+        try:
+            print(
+                f'{f.companies[company].name:10s} {product:12s} ' +
+                f'{f.companies[company].products[product]["name"]:23s} ' +
+                f'{f.companies[company].products[product]["price"]:6.2f} '
+            )
 
-    print(f"{company.products=}")
+        except KeyError:
+            print(
+                f'KeyError: {product} or price not found (company: {company})'
+            )
 
-    for product_key, product in company.products.items():
-        print(f"{product_key=} {product['name']=}")
-
-
-
+    print()

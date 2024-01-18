@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
+import re
 import shutil
 import subprocess
+import json
 from bs4 import BeautifulSoup as BS
 import requests
 import pytz
+
 
 from .const import (
     PATH,
@@ -22,7 +25,8 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_PRICE_TYPE = "pump"
 DIESEL = "diesel"
 DIESEL_PLUS = "diesel+"
-# ELECTRIC = "electric"
+CHARGE = "charge"
+QUICKCHARGE = "quickcharge"
 OCTANE_95 = "oktan 95"
 OCTANE_95_PLUS = "oktan 95+"
 OCTANE_100 = "oktan 100"
@@ -40,7 +44,8 @@ class FuelPrices:
         'oil',
         'ok',
         'q8',
-        'shell'
+        'shell',
+        'unox'
     ]
 
     _companies: dict[str, FuelCompany]
@@ -68,7 +73,14 @@ class FuelPrices:
         Refreshes the prices for all companies.
         """
         for _, company in self.companies.items():
-            company.refresh_prices()
+            try:
+                company.refresh_prices()
+            except requests.exceptions.ReadTimeout:
+                logging.warning(
+                    "Read timeout when refreshing prices from %s", company.name)
+            except requests.exceptions.ConnectTimeout:
+                logging.warning(
+                    "Connect timeout when refreshing prices from %s", company.name)
 
 
 class FuelCompany:
@@ -85,6 +97,7 @@ class FuelCompany:
     _name: str | None = None
     _url: str | None = None
     _products: dict[str, dict]
+    _timeout = 10
     # _key: str | None = None
 
     _price_type: str = DEFAULT_PRICE_TYPE
@@ -161,8 +174,10 @@ class FuelCompany:
         """
         _LOGGER.warning("Refreshing prices from %s unsupported", self.name)
 
-    def _get_website(self):
-        r = self._session.get(self._url, timeout=5)
+    def _get_website(self, url: str = None):
+        if url is None:
+            url = self._url
+        r = self._session.get(url, timeout=self._timeout)
         r.raise_for_status()
         return r
 
@@ -184,13 +199,15 @@ class FuelCompany:
         # Remove 'Pris inkl. moms: '
         price = price.replace("Pris inkl. moms: ", "")
         price = price.replace(" kr.", "")  # Remove ' kr.'
+        price = price.replace(" kr/kWh", "")  # Remove '.'
         price = price.replace(",", ".")  # Replace ',' with '.'
         price = price.strip()  # Remove leading or trailing whitespaces
         # Return the price with 2 decimals
         return f"{float(price):.2f}"
 
     def _set_price(self, product_key, price_string):
-        self._products[product_key]["price"] = self._clean_price(price_string)
+        self._products[product_key]["price"] = float(
+            self._clean_price(price_string))
         dt = datetime.now(DK_TZ)
         self._products[product_key]["last_update"] = dt.strftime(
             "%d/%m/%Y, %H:%M:%S")
@@ -198,7 +215,6 @@ class FuelCompany:
     def _get_data_from_table(self, product_col, price_col):
         r = self._get_website()
         html = self._get_html_soup(r)
-
         rows = html.find_all("tr")
 
         for row in rows:
@@ -215,7 +231,7 @@ class FuelCompany:
                     )
 
     def _download_file(self, url, filename, path):
-        r = self._session.get(url, stream=True)
+        r = self._session.get(url, stream=True, timeout=self._timeout)
         r.raise_for_status()
         with open(path + filename, "wb") as file:
             for block in r.iter_content(chunk_size=1024):
@@ -274,7 +290,8 @@ class FuelCompanyShell(FuelCompany):
         OCTANE_95: {"name": "Shell FuelSave 95 oktan"},
         OCTANE_100: {"name": "Shell V-Power 100 oktan"},
         DIESEL: {"name": "Shell FuelSave Diesel"},
-        DIESEL_PLUS: {"name": "Shell V-Power Diesel"}
+        DIESEL_PLUS: {"name": "Shell V-Power Diesel"},
+        QUICKCHARGE: {"name": "El/kWh"}
     }
 
     def refresh_prices(self):
@@ -305,7 +322,7 @@ class FuelCompanyCirclek(FuelCompany):
         OCTANE_95_PLUS: {"name": "miles+95"},
         DIESEL:  {"name": "miles Diesel"},
         DIESEL_PLUS: {"name": "miles+ Diesel"},
-        "electric": {"name": "El Lynlader"}
+        QUICKCHARGE: {"name": "El Lynlader"}
     }
 
     def refresh_prices(self):
@@ -315,16 +332,18 @@ class FuelCompanyCirclek(FuelCompany):
 class FuelCompanyF24(FuelCompany):
 
     _name: str = "F24"
-    _url: str = "https://www.f24.dk/-/api/PriceViewProduct/GetPriceViewProducts"
+    _json_url: str = "https://www.f24.dk/-/api/PriceViewProduct/GetPriceViewProducts"
+    _url: str = "https://www.f24.dk/priser/"
 
     _products = {
         OCTANE_95: {"name": "GoEasy 95 E10", "ProductCode": 22253},
         OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22603},
         DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24453},
         DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24338},
+        CHARGE: {"name": "Hurtiglader"}
     }
 
-    def refresh_prices(self):
+    def refresh_fuel_prices(self):
         # F24 and Q8 returns JSON and expects us to ask with a payload in JSON
         headers = {"Content-Type": "application/json"}
         # Let us prepare a nice payload
@@ -338,40 +357,68 @@ class FuelCompanyF24(FuelCompany):
         payload["FuelsIdList"] = []
         # We can control the order of the returned data with a Index
         index = 0
-        # Loop through the products
-        for product_dict in self._products.values():
-            # Add "Index" to the dictionary of the product
-            product_dict["Index"] = index
-            # Append the product to the list
-            payload["FuelsIdList"].append(product_dict)
-            # increment the index
-            index += 1
+        # Loop through the products, excluding the electric products without a product code
+        for product_key, product_dict in self._products.items():
+            if "ProductCode" in product_dict:
+                product_dict["Index"] = index
+                payload["FuelsIdList"].append(product_dict)
+                index += 1
 
         # Send our payload and headers to the URL as a POST
-        r = self._session.post(self._url, headers=headers, data=str(payload))
+        r = self._session.post(
+            self._json_url, headers=headers,
+            data=str(payload), timeout=self._timeout
+        )
         r.raise_for_status()
 
-        # Loop through the products
         for product_key, product_dict in self._products.items():
-            # Extract the data of the product at the given Index from the dictionary
-            # Remember we told the server in which order we wanted the data
-            json_product = r.json()["Products"][product_dict["Index"]]
-            # Get only the name and the price of the product
+            if "ProductCode" in product_dict:
+                # Extract the data of the product at the given Index from the dictionary
+                # Remember we told the server in which order we wanted the data
+                json_product = r.json()[
+                    "Products"][product_dict["Index"]]
+                # Get only the name and the price of the product
 
-            self._set_price(
-                product_key, json_product["PriceInclVATInclTax"])
+                self._set_price(
+                    product_key, json_product["PriceInclVATInclTax"])
+
+    def refresh_electric_prices(self):
+        # This is a bit of a hack, but it works
+        prices = self._get_html_soup(
+            self._get_website()
+        ).find_all("tr")[3].find_all("td")[1:]
+
+        if len(prices) == 2:
+            if QUICKCHARGE in self.products_name_key_idx.values():
+                self._set_price(QUICKCHARGE, prices[0].text)
+            prices.pop(0)
+
+        if CHARGE in self.products_name_key_idx.values():
+            self._set_price(CHARGE, prices[0].text)
+
+    def refresh_prices(self):
+        self.refresh_fuel_prices()
+
+        if (
+            QUICKCHARGE in self.products_name_key_idx.values()
+            or CHARGE in self.products_name_key_idx.values()
+        ):
+            self.refresh_electric_prices()
 
 
 class FuelCompanyQ8(FuelCompanyF24):
 
     _name: str = "Q8"
-    _url: str = "https://www.q8.dk/-/api/PriceViewProduct/GetPriceViewProducts"
+    _json_url: str = "https://www.q8.dk/-/api/PriceViewProduct/GetPriceViewProducts"
+    _url: str = "https://www.q8.dk/priser/"
 
     _products = {
         OCTANE_95: {"name": "GoEasy 95 E10", "ProductCode": 22251},
         OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22601},
         DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24451},
         DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24337},
+        CHARGE: {"name": "Hurtiglader"},
+        QUICKCHARGE: {"name": "Lynlader"}
     }
 
 
@@ -481,3 +528,50 @@ class FuelCompanyGoon(FuelCompany):
                         "%s: %s", product_dict["name"], out[0].strip().decode("utf-8"))
                     self._set_price(
                         product_key, out[0].strip().decode("utf-8"))
+
+
+class FuelCompanyUnox(FuelCompany):
+
+    _name: str = "Uno-X"
+    _url: str = "https://bilist.unoxmobility.dk/braendstofpriser"
+    _js_url: str = "https://bilist.unoxmobility.dk/umbraco/surface/PriceListData/PriceList"
+
+    _products = {
+        OCTANE_95: {"name": "Blyfri 95 E10"},
+        OCTANE_95_PLUS: {"name": "Blyfri 98 E5"},
+        OCTANE_100: {"name": "Blyfri 100 E5"},
+        DIESEL:  {"name": "Diesel"},
+    }
+
+    def refresh_prices(self):
+        # Uno-X returns not quite JSON.
+        # {"Date":"\/Date(1700407231204)\/","DateFormatted":"19. nov. 2023",
+        # "DateUnixEpoc":1700407231,"Product":"Blyfri 100 E5","ListPriceExclVat":13.431,
+        # "ListPriceInclVat":16.79,"PumpPrice":14.78}
+        r = self._get_website(url=self._js_url)
+        # iterate over each matching pattern
+        for match in re.finditer(r"({\"Date[^}]*})", r.text):
+            json_string = match.group(0)
+            # parse the JSON string
+            json_data = json.loads(json_string)
+            # check if the product is in our list
+            if json_data["Product"] in self.products_name_key_idx.keys():
+
+                if (
+                    "DateUnixEpoc" not in self._products[
+                        self.products_name_key_idx[json_data["Product"]]
+                    ] or
+                        self._products[
+                            self.products_name_key_idx[json_data["Product"]]
+                    ]["DateUnixEpoc"] <= json_data['DateUnixEpoc']
+                ):
+
+                    # set the price
+                    self._set_price(
+                        self.products_name_key_idx[json_data["Product"]],
+                        json_data["PumpPrice"]
+                    )
+
+                    self._products[
+                        self.products_name_key_idx[json_data["Product"]]
+                    ]["DateUnixEpoc"] = json_data['DateUnixEpoc']
