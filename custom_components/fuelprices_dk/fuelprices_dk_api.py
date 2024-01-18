@@ -17,8 +17,6 @@ from .const import (
 
 DK_TZ = pytz.timezone("Europe/Copenhagen")
 
-# from .fuelprices_dk_parsers import FuelParser  # Module containing parsers
-
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 _LOGGER = logging.getLogger(__name__)
 

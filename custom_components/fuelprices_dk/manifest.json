@@ -1,11 +1,11 @@
 {
-    "domain": "fuelprices_dk",
-    "name": "Fuelprices DK",
-    "documentation": "https://github.com/J-Lindvig/Fuelprices_DK",
-    "issue_tracker": "https://github.com/J-Lindvig/Fuelprices_DK/issues",
+    "domain": "fuelprices_dk-2",
+    "name": "Fuelprices DK²",
+    "documentation": "https://github.com/r-poulsen/Fuelprices_DK-2",
+    "issue_tracker": "https://github.com/r-poulsen/Fuelprices_DK-2/issues",
     "dependencies": [],
-    "codeowners": ["@J-Lindvig"],
+    "codeowners": ["@r-poulsen"],
     "requirements": ["beautifulsoup4", "html.parser"],
     "iot_class": "cloud_polling",
-    "version": "1.6"
+    "version": "1.7"
 }
