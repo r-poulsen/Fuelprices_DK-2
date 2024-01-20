@@ -23,8 +23,8 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_PRICE_TYPE = "pump"
 DIESEL = "diesel"
 DIESEL_PLUS = "diesel+"
-CHARGE = "charge"
-QUICKCHARGE = "quickcharge"
+CHARGE = "lader"
+QUICKCHARGE = "lynlader"
 OCTANE_95 = "oktan 95"
 OCTANE_95_PLUS = "oktan 95+"
 OCTANE_100 = "oktan 100"
@@ -133,8 +133,8 @@ class FuelCompany:
         Factory method to create an instance of a FuelCompany subclass based on the company_key.
 
         Args:
-            company_key (str): The key representing the fuel company.
-            product_keys ([str]): The keys representing the products.
+            company_key (str): The key representing the fuel company
+            subscribe_products ([str]): The products that we wish to subscribe to from this company
 
         Returns:
             FuelCompany | None: FuelCompany subclass instance if company_key is valid or None
@@ -150,25 +150,35 @@ class FuelCompany:
 
     @property
     def name(self):
+        """
+        Returns the company name.
+        """
         return self._name
 
     @property
     def products(self):
+        """
+        Returns the list of products available.
+        """
         return self._products
 
     @property
     def url(self):
+        """
+        Returns the main URL for price retrieval.
+        """
         return self._url
 
     @property
     def price_type(self):
+        """
+        Returns the price type of the fuel.
+        """
         return self._price_type
 
     def refresh_prices(self):
         """
-        Refreshes the company's prices by running the function from the parser module
-        with the same name as the company's key. Updates the dictionary with products
-        with the returned data.
+        Refreshes the prices from the fuel company's website.
         """
         _LOGGER.warning("Refreshing prices from %s unsupported", self.name)
 
@@ -238,6 +248,17 @@ class FuelCompany:
 
 
 class FuelCompanyOk(FuelCompany):
+    """
+    Represents the OK fuel company.
+
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict[str, dict]): A dictionary containing the products offered by the fuel company.
+
+    Methods:
+        refresh_prices: Parses the OK website to extract fuel prices for the given products.
+    """
 
     _name: str = "OK"
     _url: str = "https://www.ok.dk/offentlig/produkter/braendstof/priser/vejledende-standerpriser"
@@ -280,6 +301,14 @@ class FuelCompanyOk(FuelCompany):
 
 
 class FuelCompanyShell(FuelCompany):
+    """
+    Represents the Shell fuel company.
+
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
 
     _name: str = "Shell"
     _url: str = "https://shellservice.dk/wp-json/shell-wp/v2/daily-prices"
@@ -296,13 +325,13 @@ class FuelCompanyShell(FuelCompany):
         r = self._get_website()
 
         try:
-            json = r.json()
+            json_data = r.json()
 
         except requests.exceptions.JSONDecodeError as e:
             _LOGGER.error("Error parsing JSON from Shell: %s", e)
             raise e
 
-        for product in json["results"]["products"]:
+        for product in json_data["results"]["products"]:
             if product["name"] in self.products_name_key_idx.keys():
                 self._set_price(
                     self.products_name_key_idx[product["name"]],

@@ -6,8 +6,8 @@ from fuelprices_dk import FuelPrices
 
 DIESEL = "diesel"
 DIESEL_PLUS = "diesel+"
-CHARGE = "charge"
-QUICKCHARGE = "quickcharge"
+CHARGE = "lader"
+QUICKCHARGE = "lynlader"
 OCTANE_95 = "oktan 95"
 OCTANE_95_PLUS = "oktan 95+"
 OCTANE_100 = "oktan 100"
