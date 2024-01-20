@@ -74,7 +74,13 @@ class FuelPriceSensor(SensorEntity):
         self._company_name = self._fuel_company.name
         self._product_name = self._fuel_company.products[product_key]["name"]
         self._product_key = product_key
-        self._icon = "mdi:gas-station"
+        if (
+            "type" in self._fuel_company.products[product_key]
+                and self._fuel_company.products[product_key]["type"] == "electricity"
+        ):
+            self._icon = "mdi:flash"
+        else:
+            self._icon = "mdi:gas-station"
         self._attr_state_class = SensorStateClass.MEASUREMENT
 
         # Some companies put their name into the product, which leads to double names

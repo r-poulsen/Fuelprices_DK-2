@@ -318,7 +318,7 @@ class FuelCompanyShell(FuelCompany):
         OCTANE_100: {"name": "Shell V-Power 100 oktan"},
         DIESEL: {"name": "Shell FuelSave Diesel"},
         DIESEL_PLUS: {"name": "Shell V-Power Diesel"},
-        QUICKCHARGE: {"name": "El/kWh"}
+        QUICKCHARGE: {"name": "El/kWh", "type": "electricity"}
     }
 
     def refresh_prices(self):
@@ -349,7 +349,7 @@ class FuelCompanyCirclek(FuelCompany):
         OCTANE_95_PLUS: {"name": "miles+95"},
         DIESEL:  {"name": "miles Diesel"},
         DIESEL_PLUS: {"name": "miles+ Diesel"},
-        QUICKCHARGE: {"name": "El Lynlader"}
+        QUICKCHARGE: {"name": "El Lynlader", "type": "electricity"}
     }
 
     def refresh_prices(self):
@@ -367,7 +367,7 @@ class FuelCompanyF24(FuelCompany):
         OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22603},
         DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24453},
         DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24338},
-        CHARGE: {"name": "Hurtiglader"}
+        CHARGE: {"name": "Hurtiglader", "type": "electricity"}
     }
 
     def refresh_fuel_prices(self):
@@ -444,8 +444,8 @@ class FuelCompanyQ8(FuelCompanyF24):
         OCTANE_95_PLUS: {"name": "GoEasy 95 Extra E5", "ProductCode": 22601},
         DIESEL:  {"name": "GoEasy Diesel", "ProductCode": 24451},
         DIESEL_PLUS: {"name": "GoEasy Diesel Extra", "ProductCode": 24337},
-        CHARGE: {"name": "Hurtiglader"},
-        QUICKCHARGE: {"name": "Lynlader"}
+        CHARGE: {"name": "Hurtiglader", "type": "electricity"},
+        QUICKCHARGE: {"name": "Lynlader", "type": "electricity"}
     }
 
 
