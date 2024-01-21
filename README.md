@@ -46,7 +46,7 @@ fuelprices_dk-2:
         - ok
         - shell
     fueltypes:
-        # Possible values are: oktan 95, oktan 95+, oktan 100, diesel, diesel+, charge and quickcharge
+        # Possible values are: oktan 95, oktan 95+, oktan 100, diesel, diesel+, lader and lynlader
         - oktan 95
         - diesel
 ```

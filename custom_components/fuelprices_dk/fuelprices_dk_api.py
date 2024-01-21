@@ -1,3 +1,5 @@
+"""Scrapes fuel prices from different Danish fuel companies."""
+
 from __future__ import annotations
 
 import logging
@@ -64,11 +66,24 @@ class FuelPrices:
 
     @property
     def companies(self) -> dict[str, FuelCompany]:
+        """
+        Returns a dictionary of fuel companies.
+
+        The dictionary contains fuel company names as keys and FuelCompany objects as values.
+
+        Returns:
+            dict[str, FuelCompany]: A dictionary of fuel companies.
+        """
         return self._companies
 
     def refresh(self):
         """
         Refreshes the prices for all companies.
+
+        This method iterates through all the companies and calls the `refresh_prices` method for each company.
+        If a `ReadTimeout` or `ConnectTimeout` exception occurs during the refresh process, a warning message is logged.
+
+        :return: None
         """
         for _, company in self.companies.items():
             try:
@@ -252,12 +267,12 @@ class FuelCompanyOk(FuelCompany):
     Represents the OK fuel company.
 
     Attributes:
-        _name (str): The name of the fuel company.
-        _url (str): The URL to fetch daily prices from.
-        _products (dict[str, dict]): A dictionary containing the products offered by the fuel company.
+        _name (str): The name of the fuel company
+        _url (str): The URL to fetch daily prices from
+        _products (dict[str, dict]): A dict containing the products offered by the fuel company
 
     Methods:
-        refresh_prices: Parses the OK website to extract fuel prices for the given products.
+        refresh_prices: Parses the OK website to extract fuel prices for the given products
     """
 
     _name: str = "OK"
@@ -340,7 +355,14 @@ class FuelCompanyShell(FuelCompany):
 
 
 class FuelCompanyCirclek(FuelCompany):
+    """
+    Represents the Circle K fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "Circle K"
     _url: str = "https://www.circlek.dk/priser"
 
@@ -357,7 +379,15 @@ class FuelCompanyCirclek(FuelCompany):
 
 
 class FuelCompanyF24(FuelCompany):
+    """
+    Represents the F24 fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch electricity prices from.
+        _json_url (str): JSON to fetch daily fuel prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "F24"
     _json_url: str = "https://www.f24.dk/-/api/PriceViewProduct/GetPriceViewProducts"
     _url: str = "https://www.f24.dk/priser/"
@@ -434,7 +464,15 @@ class FuelCompanyF24(FuelCompany):
 
 
 class FuelCompanyQ8(FuelCompanyF24):
+    """
+    Represents the Q8 fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch electricity prices from.
+        _json_url (str): JSON to fetch daily fuel prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "Q8"
     _json_url: str = "https://www.q8.dk/-/api/PriceViewProduct/GetPriceViewProducts"
     _url: str = "https://www.q8.dk/priser/"
@@ -450,7 +488,14 @@ class FuelCompanyQ8(FuelCompanyF24):
 
 
 class FuelCompanyIngo(FuelCompany):
+    """
+    Represents the Ingo fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "Ingo"
     _url: str = "https://www.ingo.dk/br%C3%A6ndstofpriser/aktuelle-br%C3%A6ndstofpriser"
 
@@ -465,7 +510,14 @@ class FuelCompanyIngo(FuelCompany):
 
 
 class FuelCompanyOil(FuelCompany):
+    """
+    Represents the OIL! fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "OIL!"
     _url: str = "https://www.oil-tankstationer.dk/de-gaeldende-braendstofpriser/"
 
@@ -489,7 +541,16 @@ class FuelCompanyOil(FuelCompany):
 
 
 class FuelCompanyGoon(FuelCompany):
+    """
+    Represents the Go' On fuel company.
 
+    Uses ssocr to OCR the prices from an image.
+
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "Go' on"
     _url: str = "https://goon.nu/priser/#Aktuellelistepriser"
 
@@ -558,7 +619,15 @@ class FuelCompanyGoon(FuelCompany):
 
 
 class FuelCompanyUnox(FuelCompany):
+    """
+    Represents the UNO-X fuel company.
 
+    Attributes:
+        _name (str): The name of the fuel company.
+        _url (str): The URL to display to end users.
+        _js_url (str): The JSON URL to fetch daily prices from.
+        _products (dict): A dictionary containing the products offered by the fuel company.
+    """
     _name: str = "Uno-X"
     _url: str = "https://bilist.unoxmobility.dk/braendstofpriser"
     _js_url: str = "https://bilist.unoxmobility.dk/umbraco/surface/PriceListData/PriceList"
