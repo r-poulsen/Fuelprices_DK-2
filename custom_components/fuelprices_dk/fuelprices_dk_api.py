@@ -110,7 +110,7 @@ class FuelCompany:
     _name: str | None = None
     _url: str | None = None
     _products: dict[str, dict]
-    _timeout = 10
+    _timeout = 5
     # _key: str | None = None
 
     _price_type: str = DEFAULT_PRICE_TYPE
@@ -236,6 +236,9 @@ class FuelCompany:
             "%d/%m/%Y, %H:%M:%S")
 
     def _get_data_from_table(self, product_col, price_col):
+        # Use found_price to ensure that we only use the first price found for each product
+        found_price = []
+
         r = self._get_website()
         html = self._get_html_soup(r)
         rows = html.find_all("tr")
@@ -245,13 +248,15 @@ class FuelCompany:
             if cells:
                 product_name = self._clean_product_name(
                     cells[product_col].text)
+
                 if (
-                    product_name in self.products_name_key_idx.keys()
-                        and 'price' not in self.products[self.products_name_key_idx[product_name]]
+                    product_name not in found_price
+                    and product_name in self.products_name_key_idx.keys()
                 ):
                     self._set_price(
                         self.products_name_key_idx[product_name], cells[price_col].text
                     )
+                    found_price.append(product_name)
 
     def _download_file(self, url, filename, path):
         r = self._session.get(url, stream=True, timeout=self._timeout)
