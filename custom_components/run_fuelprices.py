@@ -39,23 +39,20 @@ _LOGGER = logging.getLogger(__name__)
 f = FuelPrices()
 f.load_companies(None, None)
 
+f.refresh()
+for company, products in test_companies.items():
+    for product in products:
+        try:
+            print(
+                f'{f.companies[company].name:10s} {product:12s} ' +
+                f'{f.companies[company].products[product]["name"]:23s} ' +
+                f'{f.companies[company].products[product]["price"]:6.2f} '
+            )
 
-while True:
-    f.refresh()
-    for company, products in test_companies.items():
-        for product in products:
-            try:
-                print(
-                    f'{f.companies[company].name:10s} {product:12s} ' +
-                    f'{f.companies[company].products[product]["name"]:23s} ' +
-                    f'{f.companies[company].products[product]["price"]:6.2f} '
-                )
+        except KeyError:
+            print(
+                f'KeyError: {product} or price not found (company: {
+                    company})'
+            )
 
-            except KeyError:
-                print(
-                    f'KeyError: {product} or price not found (company: {
-                        company})'
-                )
-
-        print()
-    time.sleep(5)
+    print()
