@@ -80,8 +80,9 @@ class FuelPrices:
         """
         Refreshes the prices for all companies.
 
-        This method iterates through all the companies and calls the `refresh_prices` method for each company.
-        If a `ReadTimeout` or `ConnectTimeout` exception occurs during the refresh process, a warning message is logged.
+        This method iterates through all the companies and calls the `refresh_prices` method for
+        each company. If a `ReadTimeout` or `ConnectTimeout` exception occurs during the refresh
+        process, a warning message is logged.
 
         :return: None
         """
@@ -94,6 +95,9 @@ class FuelPrices:
             except requests.exceptions.ConnectTimeout:
                 logging.warning(
                     "Connect timeout when refreshing prices from %s", company.name)
+            except requests.exceptions.HTTPError as e:
+                logging.warning(
+                    "HTTP error when refreshing prices from %s: %s", company.name, e)
 
 
 class FuelCompany:
