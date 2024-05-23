@@ -8,10 +8,25 @@ import re
 import shutil
 import subprocess
 import json
+from typing import List
 from bs4 import BeautifulSoup as BS
 import requests
 import pytz
 
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+from urllib3.util import ssl_
+
+import ssl
+
+# from requests.adapters import HTTPAdapter
+# from urllib3.poolmanager import PoolManager
+# from urllib3.util import ssl_
+
+# from urllib3.util.ssl_ import create_urllib3_context
+import urllib3.util.ssl_
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
 
 from .const import (
     PATH,
@@ -36,7 +51,7 @@ class FuelPrices:
     """Class to manage fuel prices from different companies."""
 
     # All the supported companies
-    company_keys: [str] = [
+    company_keys: List[str] = [
         'circlek',
         'f24',
         'goon',
@@ -53,7 +68,7 @@ class FuelPrices:
     def __init__(self):
         self._companies = {}
 
-    def load_companies(self, subscribe_companies: [str], subscribe_products: [str]):
+    def load_companies(self, subscribe_companies: List[str], subscribe_products: List[str]):
         """Load fuel companies and their products"""
 
         if not subscribe_companies:
@@ -100,6 +115,22 @@ class FuelPrices:
                     "HTTP error when refreshing prices from %s: %s", company.name, e)
 
 
+class TlsAdapter(HTTPAdapter):
+
+    def __init__(self, ssl_options=0, **kwargs):
+        self.ssl_options = ssl_options
+        super(TlsAdapter, self).__init__(**kwargs)
+
+    def init_poolmanager(self, *pool_args, **pool_kwargs):
+        ctx = ssl_.create_urllib3_context(
+            ciphers='AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA', cert_reqs=ssl.CERT_REQUIRED, options=self.ssl_options)
+        self.poolmanager = PoolManager(
+            *pool_args,
+            ssl_context=ctx,
+            **pool_kwargs
+        )
+
+
 class FuelCompany:
     """
     Represents a fuel company.
@@ -124,10 +155,11 @@ class FuelCompany:
     """
 
     def __init__(
-            self, subscribe_products: [str] = None
+            self, subscribe_products: List[str] = None
     ):
 
         self._session = requests.Session()
+
         self._session.headers.update({
             'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -147,7 +179,7 @@ class FuelCompany:
         }
 
     @classmethod
-    def factory(cls, company_key: str, subscribe_products: [str]) -> FuelCompany | None:
+    def factory(cls, company_key: str, subscribe_products: List[str]) -> FuelCompany | None:
         """
         Factory method to create an instance of a FuelCompany subclass based on the company_key.
 
@@ -344,6 +376,11 @@ class FuelCompanyShell(FuelCompany):
         DIESEL_PLUS: {"name": "Shell V-Power Diesel"},
         QUICKCHARGE: {"name": "El/kWh", "type": "electricity"}
     }
+
+    def __init__(self, subscribe_products: List[str] = None):
+        super().__init__(subscribe_products)
+        adp = TlsAdapter(ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2)
+        self._session.mount("https://", adp)  # adp instead of adapter
 
     def refresh_prices(self):
         r = self._get_website()
