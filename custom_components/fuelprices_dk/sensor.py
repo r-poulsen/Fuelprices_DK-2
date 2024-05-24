@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-
+from datetime import timedelta
 from homeassistant.const import ATTR_ATTRIBUTION
+
+
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
+    SensorDeviceClass,
+)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
 from .const import (
     CONF_CLIENT,
     CONF_UPDATE_INTERVAL,
@@ -12,14 +21,6 @@ from .const import (
     DOMAIN,
 )
 
-from datetime import timedelta
-
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorStateClass,
-    SensorDeviceClass,
-)
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 _LOGGER = logging.getLogger(__name__)
