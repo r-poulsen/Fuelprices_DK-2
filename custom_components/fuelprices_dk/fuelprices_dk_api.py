@@ -381,6 +381,7 @@ class FuelCompanyShell(FuelCompany):
         super().__init__(subscribe_products)
         adp = TlsAdapter(ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2)
         self._session.mount("https://", adp)  # adp instead of adapter
+        self._session.verify = False
 
     def refresh_prices(self):
         r = self._get_website()
