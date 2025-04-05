@@ -676,45 +676,53 @@ class FuelCompanyUnox(FuelCompany):
         _products (dict): A dictionary containing the products offered by the fuel company.
     """
     _name: str = "Uno-X"
-    _url: str = "https://bilist.unoxmobility.dk/braendstofpriser"
-    _js_url: str = "https://bilist.unoxmobility.dk/umbraco/surface/PriceListData/PriceList"
+    _url: str = "https://unoxmobility.dk/privat/braendstofpriser"
+    _js_url: str = "https://unoxmobility.dk/privat/braendstofpriser"
 
     _products = {
         OCTANE_95: {"name": "Blyfri 95 E10"},
-        OCTANE_95_PLUS: {"name": "Blyfri 98 E5"},
-        OCTANE_100: {"name": "Blyfri 100 E5"},
+        OCTANE_100: {"name": "Blyfri 100"},
         DIESEL:  {"name": "Diesel"},
     }
 
+    def _get_website(self, url: str = None):
+        if url is None:
+            url = self._url
+
+        headers = {
+            'Referer': 'https://unoxmobility.dk/privat/braendstofpriser',
+            # Unsure about Next-Action. What is it? Does it expire?
+            'Next-Action': 'af4e45c438f5f7db0b7e0403b31b98968abad4d8',
+            'Cookie': 'NEXT_LOCALE=privat',
+        }
+
+        r = self._session.post(
+            url, timeout=self._timeout, headers=headers, data='["prices_data"]')
+        r.raise_for_status()
+        return r
+
     def refresh_prices(self):
-        # Uno-X returns not quite JSON.
-        # {"Date":"\/Date(1700407231204)\/","DateFormatted":"19. nov. 2023",
-        # "DateUnixEpoc":1700407231,"Product":"Blyfri 100 E5","ListPriceExclVat":13.431,
-        # "ListPriceInclVat":16.79,"PumpPrice":14.78}
-        r = self._get_website(url=self._js_url)
-        # iterate over each matching pattern
-        for match in re.finditer(r"({\"Date[^}]*})", r.text):
-            json_string = match.group(0)
-            # parse the JSON string
-            json_data = json.loads(json_string)
-            # check if the product is in our list
-            if json_data["Product"] in self.products_name_key_idx.keys():
+        raw_content = self._get_website(url=self._js_url).text
+        second_line_content = raw_content.split('\n')[1]
+        cleaned_content = second_line_content.replace('1:', '', 1).strip()
+        entries = json.loads(cleaned_content)
 
-                if (
-                    "DateUnixEpoc" not in self._products[
-                        self.products_name_key_idx[json_data["Product"]]
-                    ] or
-                        self._products[
-                            self.products_name_key_idx[json_data["Product"]]
-                    ]["DateUnixEpoc"] <= json_data['DateUnixEpoc']
-                ):
+        product_names = [
+            product['name']
+            for product in self._products.values()
+        ]
+        processed_products = []
+        for entry in entries:
+            product_name = entry["ProduktNavn"]
 
-                    # set the price
-                    self._set_price(
-                        self.products_name_key_idx[json_data["Product"]],
-                        json_data["PumpPrice"]
-                    )
+            self._set_price(
+                self.products_name_key_idx[product_name],
+                entry["PumpePris"]
+            )
 
-                    self._products[
-                        self.products_name_key_idx[json_data["Product"]]
-                    ]["DateUnixEpoc"] = json_data['DateUnixEpoc']
+            processed_products.append(product_name)
+
+            # Break if we have found prices for all our products.
+            # This assumes newest prices first.
+            if all(product in processed_products for product in product_names):
+                break
